@@ -12,7 +12,8 @@
 
 2. **Build and Start the Application**:
    ```bash
-   docker-compose up
+   docker build -t ettranslation-flask_app .
+   docker run -p 5000:5000 --name translation_app ettranslation-flask_app
    ```
 
 3. **Access the Application**: Open your web browser and go to `http://127.0.0.1:5000`.

@@ -50,5 +50,5 @@ def get_translation_result(job_id):
         return jsonify({'status': 'pending'}), 202
     return jsonify({'status': 'completed', 'result': result}), 200
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
