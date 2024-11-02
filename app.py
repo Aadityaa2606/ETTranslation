@@ -1,27 +1,54 @@
-# Importing flask module in the project is mandatory
-# An object of Flask class is our WSGI application.
-from flask import Flask
+from flask import Flask, request, jsonify, send_from_directory
+import threading
+import time
+import os
 
-# Flask constructor takes the name of 
-# current module (__name__) as argument.
+from translator import language_translator
+
 app = Flask(__name__)
 
-# The route() function of the Flask class is a decorator, 
-# which tells the application which URL should call 
-# the associated function.
+# Dictionary to store results of translations
+results = {}
+
+# Serve the HTML file from the root URL
 @app.route('/')
-# ‘/’ URL is bound with hello_world() function.
-def hello_world():
-    return 'Hello World'
+def serve_html():
+    return send_from_directory(os.getcwd(), 'index.html')
 
-@app.route('/translate')
-def handleTranslation(english):
-    return english
+# Endpoint to start translation
+@app.route('/translate', methods=['POST'])
+def translate():
+    # Get input text from the request
+    data = request.get_json()
+    text = data.get('text')
     
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
 
-# main driver function
+    # Generate a unique job ID for this translation task
+    job_id = str(int(time.time() * 1000))
+
+    # Run translation in a separate thread to avoid blocking
+    thread = threading.Thread(target=run_translation, args=(job_id, text))
+    thread.start()
+
+    return jsonify({'message': 'Translation started', 'job_id': job_id}), 202
+
+# Helper function to perform translation and store result
+def run_translation(job_id, text):
+    # Perform the translation
+    result = language_translator(text)
+    
+    # Store the result in the results dictionary with job_id as key
+    results[job_id] = result
+
+# Endpoint to check result of translation by job ID
+@app.route('/translate/result/<job_id>', methods=['GET'])
+def get_translation_result(job_id):
+    result = results.get(job_id)
+    if result is None:
+        return jsonify({'status': 'pending'}), 202
+    return jsonify({'status': 'completed', 'result': result}), 200
+
 if __name__ == '__main__':
-
-    # run() method of Flask class runs the application 
-    # on the local development server.
-    app.run()
+    app.run(debug=True)
